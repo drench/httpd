@@ -262,6 +262,7 @@ char proxyhost[1024];		/* proxy host name */
 int proxyport = 0;		/* proxy port */
 char *connecthost;
 apr_port_t connectport;
+char *src_address;
 char *gnuplot;			/* GNUplot file */
 char *csvperc;			/* CSV Percentile file */
 char url[1024];
@@ -1182,6 +1183,7 @@ static void output_html_results(void)
 static void start_connect(struct connection * c)
 {
     apr_status_t rv;
+    apr_sockaddr_t *from;
 
 #ifdef USE_SSL
     if (ssl == 1) {
@@ -1210,6 +1212,13 @@ static void start_connect(struct connection * c)
     if ((rv = apr_socket_opt_set(c->aprsock, APR_SO_NONBLOCK, 1))
          != APR_SUCCESS) {
         apr_err("socket nonblock", rv);
+    }
+    if (src_address) {
+        if ((rv = apr_sockaddr_info_get(&from, src_address, destsa->family,
+                0, 0, c->ctx)) != APR_SUCCESS)
+                apr_err("src_address get", rv);
+        if ((rv = apr_socket_bind(c->aprsock, from)) != APR_SUCCESS)
+            apr_err("src_address bind", rv);
     }
     c->start = apr_time_now();
     if ((rv = apr_connect(c->aprsock, destsa)) != APR_SUCCESS) {
@@ -1814,6 +1823,7 @@ static void usage(const char *progname)
     fprintf(stderr, "    -P attribute    Add Basic Proxy Authentication, the attributes\n");
     fprintf(stderr, "                    are a colon separated username and password.\n");
     fprintf(stderr, "    -X proxy:port   Proxyserver and port number to use\n");
+    fprintf(stderr, "    -b src_address  Set the local source address\n");
     fprintf(stderr, "    -V              Print version number and exit\n");
     fprintf(stderr, "    -k              Use HTTP KeepAlive feature\n");
     fprintf(stderr, "    -d              Do not show percentiles served table.\n");
@@ -1987,7 +1997,7 @@ int main(int argc, const char * const argv[])
 #endif
 
     apr_getopt_init(&opt, cntxt, argc, argv);
-    while ((status = apr_getopt(opt, "n:c:t:T:p:v:kVhwix:y:z:C:H:P:A:g:X:de:Sq"
+    while ((status = apr_getopt(opt, "b:n:c:t:T:p:v:kVhwix:y:z:C:H:P:A:g:X:de:Sq"
 #ifdef USE_SSL
 				"s"
 #endif
@@ -2009,6 +2019,9 @@ int main(int argc, const char * const argv[])
 	    break;
 	case 'k':
 	    keepalive = 1;
+	    break;
+	case 'b':
+	    src_address = strdup(optarg);
 	    break;
 	case 'q':
 	    heartbeatres = 0;
