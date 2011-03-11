@@ -1875,7 +1875,7 @@ static void usage(const char *progname)
     fprintf(stderr, "    -P attribute    Add Basic Proxy Authentication, the attributes\n");
     fprintf(stderr, "                    are a colon separated username and password.\n");
     fprintf(stderr, "    -X proxy:port   Proxyserver and port number to use\n");
-    fprintf(stderr, "    -b src_address  Set the local source address\n");
+    fprintf(stderr, "    -s src_address  Set the local source address\n");
     fprintf(stderr, "    -V              Print version number and exit\n");
     fprintf(stderr, "    -k              Use HTTP KeepAlive feature\n");
     fprintf(stderr, "    -d              Do not show percentiles served table.\n");
@@ -2050,7 +2050,7 @@ int main(int argc, const char * const argv[])
 #endif
 
     apr_getopt_init(&opt, cntxt, argc, argv);
-    while ((status = apr_getopt(opt, "n:c:t:b:T:p:u:v:rkVhwix:y:z:C:H:P:A:g:X:de:Sq"
+    while ((status = apr_getopt(opt, "s:n:c:t:b:T:p:u:v:rkVhwix:y:z:C:H:P:A:g:X:de:Sq"
 #ifdef USE_SSL
             "Z:f:"
 #endif
@@ -2073,6 +2073,9 @@ int main(int argc, const char * const argv[])
                 break;
             case 'b':
                 windowsize = atoi(optarg);
+                break;
+            case 's':
+                src_address = strdup(optarg);
                 break;
             case 'i':
                 if (posting > 0)
